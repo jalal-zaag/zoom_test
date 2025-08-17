@@ -87,8 +87,11 @@ const ZoomTest = () => {
     useEffect(() => {
         if (!meetingStarted || !clientRef.current) return;
         const c = clientRef.current;
+        // Get current user's userId
+        const myUserId = c.getCurrentUserInfo().userId;
         // Listen for user-added and user-removed events
         const handleUserAdded = (user) => {
+            if (user.userId === myUserId) return; // Ignore self
             setRemoteUsers((prev) => {
                 if (prev.find(u => u.userId === user.userId)) return prev;
                 return [...prev, user];
@@ -100,7 +103,7 @@ const ZoomTest = () => {
         c.on('user-added', handleUserAdded);
         c.on('user-removed', handleUserRemoved);
         // Add existing remote users (in case already present)
-        setRemoteUsers(c.getAllUser().filter(u => !u.isHost));
+        setRemoteUsers(c.getAllUser().filter(u => u.userId !== myUserId));
         return () => {
             c.off('user-added', handleUserAdded);
             c.off('user-removed', handleUserRemoved);
@@ -124,6 +127,172 @@ const ZoomTest = () => {
             }
         });
     }, [remoteUsers, meetingStarted]);
+
+    // Helper to request fullscreen with vendor prefixes
+    const requestFullscreen = (element) => {
+        if (!element) return;
+        if (element.requestFullscreen) {
+            element.requestFullscreen();
+        } else if (element.webkitRequestFullscreen) { // Safari/iOS
+            element.webkitRequestFullscreen();
+        } else if (element.mozRequestFullScreen) { // Firefox
+            element.mozRequestFullScreen();
+        } else if (element.msRequestFullscreen) { // IE/Edge
+            element.msRequestFullscreen();
+        }
+    };
+
+    // Helper to exit fullscreen with vendor prefixes
+    const exitFullscreen = () => {
+        if (document.exitFullscreen) {
+            document.exitFullscreen();
+        } else if (document.webkitExitFullscreen) {
+            document.webkitExitFullscreen();
+        } else if (document.mozCancelFullScreen) {
+            document.mozCancelFullScreen();
+        } else if (document.msExitFullscreen) {
+            document.msExitFullscreen();
+        }
+    };
+
+    // Track which video is in fullscreen
+    const [fullscreenVideoId, setFullscreenVideoId] = useState(null);
+
+    // Listen for fullscreen change to update state
+    useEffect(() => {
+        const handleFullscreenChange = () => {
+            const fsElement = document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement;
+            if (!fsElement) {
+                setFullscreenVideoId(null);
+            }
+        };
+        document.addEventListener('fullscreenchange', handleFullscreenChange);
+        document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
+        document.addEventListener('mozfullscreenchange', handleFullscreenChange);
+        document.addEventListener('MSFullscreenChange', handleFullscreenChange);
+        return () => {
+            document.removeEventListener('fullscreenchange', handleFullscreenChange);
+            document.removeEventListener('webkitfullscreenchange', handleFullscreenChange);
+            document.removeEventListener('mozfullscreenchange', handleFullscreenChange);
+            document.removeEventListener('MSFullscreenChange', handleFullscreenChange);
+        };
+    }, []);
+
+    // Handler to fullscreen a video by id
+    const handleFullscreenVideo = (videoId) => {
+        const el = document.getElementById(videoId);
+        if (el) {
+            requestFullscreen(el);
+            setFullscreenVideoId(videoId);
+        }
+    };
+    // Handler to exit fullscreen
+    const handleExitFullscreen = () => {
+        exitFullscreen();
+        setFullscreenVideoId(null);
+    };
+
+    // Platform detection
+    const isIOS = () =>
+        /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+        (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+    const isWindowsOrAndroidOrLinux = () => {
+        const ua = navigator.userAgent.toLowerCase();
+        return /windows nt/.test(ua) || /android/.test(ua) || /linux/.test(ua);
+    };
+
+    // Helper: is element visible
+    function isElementVisible(el) {
+        if (!el) return false;
+        const r = el.getBoundingClientRect();
+        const style = getComputedStyle(el);
+        return r.width > 0 && r.height > 0 && style.visibility !== "hidden" && style.display !== "none";
+    }
+
+    // CSS fake fullscreen fallback for legacy iOS
+    function fakeFullscreenOn(el) {
+        if (!el) return;
+        if (!el.__prevStyle) el.__prevStyle = el.getAttribute("style") || "";
+        el.setAttribute("style", `
+            ${el.__prevStyle}
+            position: fixed !important;
+            inset: 0 !important;
+            width: 100vw !important;
+            height: 100vh !important;
+            z-index: 2147483647 !important;
+            background: black !important;
+        `);
+        document.body.style.overflow = "hidden";
+    }
+    function fakeFullscreenOff(el) {
+        if (!el) return;
+        el.setAttribute("style", el.__prevStyle || "");
+        delete el.__prevStyle;
+        document.body.style.overflow = "";
+    }
+
+    // Escape key to exit fake fullscreen
+    useEffect(() => {
+        const handler = (e) => {
+            if (e.key === "Escape") {
+                const el = document.querySelector("#sessionContainer .video-wrapper");
+                if (document.fullscreenElement) document.exitFullscreen?.();
+                else fakeFullscreenOff(el);
+            }
+        };
+        document.addEventListener("keydown", handler);
+        return () => document.removeEventListener("keydown", handler);
+    }, []);
+
+    // Main toggleFullScreen function
+    const toggleFullScreen = () => {
+        const sessionContainer = document.getElementById("sessionContainer");
+        if (!sessionContainer) return;
+
+        if (isIOS()) {
+            // Try to fullscreen the first visible <video> element
+            const videos = Array.from(sessionContainer.querySelectorAll("video"));
+            const candidate =
+                videos.find(v => typeof v.webkitEnterFullscreen === "function" && isElementVisible(v)) ||
+                videos.find(v => typeof v.webkitEnterFullscreen === "function");
+            if (candidate) {
+                try {
+                    candidate.webkitEnterFullscreen();
+                    return;
+                } catch (e) {
+                    // fallback below
+                }
+            }
+            // Fallback: CSS fake fullscreen on the first .video-wrapper
+            const wrapper = sessionContainer.querySelector(".video-wrapper");
+            if (wrapper) fakeFullscreenOn(wrapper);
+            else fakeFullscreenOn(sessionContainer);
+            return;
+        }
+
+        // Windows/Linux/Android: use standard Fullscreen API
+        if (!document.fullscreenElement && !document.webkitFullscreenElement) {
+            if (sessionContainer.requestFullscreen) {
+                sessionContainer.requestFullscreen();
+            } else if (sessionContainer.mozRequestFullScreen) {
+                sessionContainer.mozRequestFullScreen();
+            } else if (sessionContainer.webkitRequestFullscreen) {
+                sessionContainer.webkitRequestFullscreen();
+            } else if (sessionContainer.msRequestFullscreen) {
+                sessionContainer.msRequestFullscreen();
+            }
+        } else {
+            if (document.exitFullscreen) {
+                document.exitFullscreen();
+            } else if (document.mozCancelFullScreen) {
+                document.mozCancelFullScreen();
+            } else if (document.webkitExitFullscreen) {
+                document.webkitExitFullscreen();
+            } else if (document.msExitFullscreen) {
+                document.msExitFullscreen();
+            }
+        }
+    };
 
     const handleFullScreenToggle = () => {
         if (!document.fullscreenElement) {
