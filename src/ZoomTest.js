@@ -1,10 +1,11 @@
-import React, {useContext, useState, useEffect, useRef} from 'react';
+import React, {useContext, useEffect, useRef, useState} from 'react';
 import {NotificationContext} from "./contexts/NotificationContextProvider";
 import useZoomVideoTest from "./hooks/useZoomVideoTest";
 import {Button} from "antd";
 import {
     AudioOutlined,
-    FullscreenExitOutlined, FullscreenOutlined,
+    FullscreenExitOutlined,
+    FullscreenOutlined,
     SettingOutlined,
     UserOutlined,
     VideoCameraOutlined
@@ -224,6 +225,7 @@ const ZoomTest = () => {
         `);
         document.body.style.overflow = "hidden";
     }
+
     function fakeFullscreenOff(el) {
         if (!el) return;
         el.setAttribute("style", el.__prevStyle || "");
@@ -334,7 +336,15 @@ const ZoomTest = () => {
                                     id={`remote-video-${user.userId}`}
                                     autoPlay
                                     playsInline
-                                    style={{width: 320, height: 240, objectFit: 'cover', position: 'absolute', top: 0, right: 0, zIndex: 10}}
+                                    style={{
+                                        width: 320,
+                                        height: 240,
+                                        objectFit: 'cover',
+                                        position: 'absolute',
+                                        top: 0,
+                                        right: 0,
+                                        zIndex: 10
+                                    }}
                                 />
                             ))}
                         </div>
@@ -348,10 +358,37 @@ const ZoomTest = () => {
                             <Button icon={<SettingOutlined/>} onClick={toggleSettings}>Settings</Button>
                             <Button
                                 icon={isFullScreen ? <FullscreenExitOutlined/> : <FullscreenOutlined/>}
-                                onClick={handleFullScreenToggle}
+                                onClick={toggleFullScreen}
                             >
                                 {isFullScreen ? "Exit Fullscreen" : "Fullscreen"}
                             </Button>
+                            {/* iOS Fullscreen Button */}
+                            {
+                                // isIOS() &&
+                                (
+                                    <Button
+                                        icon={<FullscreenOutlined/>}
+                                        onClick={() => {
+                                            const sessionContainer = document.getElementById("sessionContainer");
+                                            if (sessionContainer) {
+                                                // Try to find a visible <video> element inside the sessionContainer
+                                                const videos = Array.from(sessionContainer.querySelectorAll("video"));
+                                                const candidate =
+                                                    videos.find(v => typeof v.webkitEnterFullscreen === "function" && v.offsetWidth > 0 && v.offsetHeight > 0) ||
+                                                    videos.find(v => typeof v.webkitEnterFullscreen === "function");
+                                                if (candidate) {
+                                                    try {
+                                                        candidate.webkitEnterFullscreen();
+                                                    } catch (e) {
+                                                        // fallback: do nothing
+                                                    }
+                                                }
+                                            }
+                                        }}
+                                    >
+                                        iOS Video Fullscreen
+                                    </Button>
+                                )}
                         </div>
                     )}
                 </div>
