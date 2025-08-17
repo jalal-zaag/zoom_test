@@ -23,7 +23,6 @@ const ZoomTest = () => {
 
     const {meetingStart, dataId} = useContext(NotificationContext);
     const [meetingStarted, setMeetingStarted] = useState(false);
-    const [isFullScreen, setIsFullScreen] = useState(false);
     const [remoteUsers, setRemoteUsers] = useState([]);
     const mediaStreamRef = useRef(null);
     const clientRef = useRef(null);
@@ -129,70 +128,6 @@ const ZoomTest = () => {
         });
     }, [remoteUsers, meetingStarted]);
 
-    // Helper to request fullscreen with vendor prefixes
-    const requestFullscreen = (element) => {
-        if (!element) return;
-        if (element.requestFullscreen) {
-            element.requestFullscreen();
-        } else if (element.webkitRequestFullscreen) { // Safari/iOS
-            element.webkitRequestFullscreen();
-        } else if (element.mozRequestFullScreen) { // Firefox
-            element.mozRequestFullScreen();
-        } else if (element.msRequestFullscreen) { // IE/Edge
-            element.msRequestFullscreen();
-        }
-    };
-
-    // Helper to exit fullscreen with vendor prefixes
-    const exitFullscreen = () => {
-        if (document.exitFullscreen) {
-            document.exitFullscreen();
-        } else if (document.webkitExitFullscreen) {
-            document.webkitExitFullscreen();
-        } else if (document.mozCancelFullScreen) {
-            document.mozCancelFullScreen();
-        } else if (document.msExitFullscreen) {
-            document.msExitFullscreen();
-        }
-    };
-
-    // Track which video is in fullscreen
-    const [fullscreenVideoId, setFullscreenVideoId] = useState(null);
-
-    // Listen for fullscreen change to update state
-    useEffect(() => {
-        const handleFullscreenChange = () => {
-            const fsElement = document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement;
-            if (!fsElement) {
-                setFullscreenVideoId(null);
-            }
-        };
-        document.addEventListener('fullscreenchange', handleFullscreenChange);
-        document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
-        document.addEventListener('mozfullscreenchange', handleFullscreenChange);
-        document.addEventListener('MSFullscreenChange', handleFullscreenChange);
-        return () => {
-            document.removeEventListener('fullscreenchange', handleFullscreenChange);
-            document.removeEventListener('webkitfullscreenchange', handleFullscreenChange);
-            document.removeEventListener('mozfullscreenchange', handleFullscreenChange);
-            document.removeEventListener('MSFullscreenChange', handleFullscreenChange);
-        };
-    }, []);
-
-    // Handler to fullscreen a video by id
-    const handleFullscreenVideo = (videoId) => {
-        const el = document.getElementById(videoId);
-        if (el) {
-            requestFullscreen(el);
-            setFullscreenVideoId(videoId);
-        }
-    };
-    // Handler to exit fullscreen
-    const handleExitFullscreen = () => {
-        exitFullscreen();
-        setFullscreenVideoId(null);
-    };
-
     // Platform detection
     const isIOS = () =>
         /iPad|iPhone|iPod/.test(navigator.userAgent) ||
@@ -244,12 +179,11 @@ const ZoomTest = () => {
 
     // Main toggleFullScreen function
     const toggleFullScreen = () => {
-        const sessionContainer = document.getElementById("sessionContainer");
-        if (!sessionContainer) return;
+        const container = document.getElementById("join-flow");
+        if (!container) return;
 
         if (isIOS()) {
-            // Try to fullscreen the first visible <video> element
-            const videos = Array.from(sessionContainer.querySelectorAll("video"));
+            const videos = Array.from(container.querySelectorAll("video"));
             const candidate =
                 videos.find(v => typeof v.webkitEnterFullscreen === "function" && isElementVisible(v)) ||
                 videos.find(v => typeof v.webkitEnterFullscreen === "function");
@@ -258,26 +192,24 @@ const ZoomTest = () => {
                     candidate.webkitEnterFullscreen();
                     return;
                 } catch (e) {
-                    // fallback below
+                    // ignore and fallback
                 }
             }
-            // Fallback: CSS fake fullscreen on the first .video-wrapper
-            const wrapper = sessionContainer.querySelector(".video-wrapper");
-            if (wrapper) fakeFullscreenOn(wrapper);
-            else fakeFullscreenOn(sessionContainer);
+            // Fallback: CSS fake fullscreen on container
+            fakeFullscreenOn(container);
             return;
         }
 
-        // Windows/Linux/Android: use standard Fullscreen API
+        // Windows/Linux/Android: use standard Fullscreen API on container
         if (!document.fullscreenElement && !document.webkitFullscreenElement) {
-            if (sessionContainer.requestFullscreen) {
-                sessionContainer.requestFullscreen();
-            } else if (sessionContainer.mozRequestFullScreen) {
-                sessionContainer.mozRequestFullScreen();
-            } else if (sessionContainer.webkitRequestFullscreen) {
-                sessionContainer.webkitRequestFullscreen();
-            } else if (sessionContainer.msRequestFullscreen) {
-                sessionContainer.msRequestFullscreen();
+            if (container.requestFullscreen) {
+                container.requestFullscreen();
+            } else if (container.mozRequestFullScreen) {
+                container.mozRequestFullScreen();
+            } else if (container.webkitRequestFullscreen) {
+                container.webkitRequestFullscreen();
+            } else if (container.msRequestFullscreen) {
+                container.msRequestFullscreen();
             }
         } else {
             if (document.exitFullscreen) {
@@ -292,6 +224,9 @@ const ZoomTest = () => {
         }
     };
 
+
+    // Helper: compute current fullscreen status
+    const isFullscreenNow = !!(document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement);
 
     return (
         <div className="border border-neutral65 rounded mt-9">
@@ -344,38 +279,33 @@ const ZoomTest = () => {
                             <Button icon={<UserOutlined/>} onClick={toggleUserList}>Users</Button>
                             <Button icon={<SettingOutlined/>} onClick={toggleSettings}>Settings</Button>
                             <Button
-                                icon={isFullScreen ? <FullscreenExitOutlined/> : <FullscreenOutlined/>}
+                                icon={isFullscreenNow ? <FullscreenExitOutlined/> : <FullscreenOutlined/>}
                                 onClick={toggleFullScreen}
                             >
-                                {isFullScreen ? "Exit Fullscreen" : "Fullscreen"}
+                                {isFullscreenNow ? "Exit Fullscreen" : "Fullscreen"}
                             </Button>
                             {/* iOS Fullscreen Button */}
-                            {
-                                // isIOS() &&
-                                (
-                                    <Button
-                                        icon={<FullscreenOutlined/>}
-                                        onClick={() => {
-                                            const sessionContainer = document.getElementById("sessionContainer");
-                                            if (sessionContainer) {
-                                                // Try to find a visible <video> element inside the sessionContainer
-                                                const videos = Array.from(sessionContainer.querySelectorAll("video"));
-                                                const candidate =
-                                                    videos.find(v => typeof v.webkitEnterFullscreen === "function" && v.offsetWidth > 0 && v.offsetHeight > 0) ||
-                                                    videos.find(v => typeof v.webkitEnterFullscreen === "function");
-                                                if (candidate) {
-                                                    try {
-                                                        candidate.webkitEnterFullscreen();
-                                                    } catch (e) {
-                                                        // fallback: do nothing
-                                                    }
-                                                }
+                            {isIOS() && (
+                                <Button
+                                    icon={<FullscreenOutlined/>}
+                                    onClick={() => {
+                                        // Try to fullscreen any visible <video> on the page
+                                        const videos = Array.from(document.querySelectorAll("video"));
+                                        const candidate =
+                                            videos.find(v => typeof v.webkitEnterFullscreen === "function" && v.offsetWidth > 0 && v.offsetHeight > 0) ||
+                                            videos.find(v => typeof v.webkitEnterFullscreen === "function");
+                                        if (candidate) {
+                                            try {
+                                                candidate.webkitEnterFullscreen();
+                                            } catch (e) {
+                                                // fallback: do nothing; user can use main Fullscreen button
                                             }
-                                        }}
-                                    >
-                                        iOS Video Fullscreen
-                                    </Button>
-                                )}
+                                        }
+                                    }}
+                                >
+                                    iOS Video Fullscreen
+                                </Button>
+                            )}
                         </div>
                     )}
                 </div>
