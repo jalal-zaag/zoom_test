@@ -1,9 +1,7 @@
-import {useContext, useState} from "react";
+import {useState} from "react";
 import ZoomVideo from "@zoom/videosdk";
 
 const useZoomVideoTest = (meeting, dataId, setMeetingStarted, handleMeetingStart, config) => {
-    const username = "jalal";
-
     const [client] = useState(() => ZoomVideo.createClient());
     const [mediaStream, setMediaStream] = useState(null);
     const [isVideoOn, setIsVideoOn] = useState(false);

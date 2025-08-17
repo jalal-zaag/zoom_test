@@ -20,7 +20,7 @@ const ZoomTest = () => {
     // Replace useTranslations with a simple function
     const t = (key) => translations[key] || key;
 
-    const {meetingStart, isMeetingStart, dataId} = useContext(NotificationContext);
+    const {meetingStart, dataId} = useContext(NotificationContext);
     const [meetingStarted, setMeetingStarted] = useState(false);
     const [isFullScreen, setIsFullScreen] = useState(false);
     const [remoteUsers, setRemoteUsers] = useState([]);
