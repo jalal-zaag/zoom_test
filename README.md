@@ -68,3 +68,39 @@ This section has moved here: [https://facebook.github.io/create-react-app/docs/d
 ### `npm run build` fails to minify
 
 This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+
+## Installing Axios
+
+To install [axios](https://github.com/axios/axios) for making HTTP requests, run:
+
+```
+npm install axios
+```
+
+## Example Usage
+
+Here is an example of how to use axios in your React app:
+
+```js
+import React, { useEffect, useState } from 'react';
+import axios from 'axios';
+
+function App() {
+  const [data, setData] = useState(null);
+
+  useEffect(() => {
+    axios.get('https://jsonplaceholder.typicode.com/posts/1')
+      .then(response => setData(response.data))
+      .catch(error => console.error(error));
+  }, []);
+
+  return (
+    <div>
+      <h1>Data from API:</h1>
+      <pre>{JSON.stringify(data, null, 2)}</pre>
+    </div>
+  );
+}
+
+export default App;
+```
