@@ -197,10 +197,6 @@ const ZoomTest = () => {
     const isIOS = () =>
         /iPad|iPhone|iPod/.test(navigator.userAgent) ||
         (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
-    const isWindowsOrAndroidOrLinux = () => {
-        const ua = navigator.userAgent.toLowerCase();
-        return /windows nt/.test(ua) || /android/.test(ua) || /linux/.test(ua);
-    };
 
     // Helper: is element visible
     function isElementVisible(el) {
@@ -296,15 +292,6 @@ const ZoomTest = () => {
         }
     };
 
-    const handleFullScreenToggle = () => {
-        if (!document.fullscreenElement) {
-            document.documentElement.requestFullscreen();
-            setIsFullScreen(true);
-        } else {
-            document.exitFullscreen();
-            setIsFullScreen(false);
-        }
-    };
 
     return (
         <div className="border border-neutral65 rounded mt-9">
