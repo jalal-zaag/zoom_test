@@ -1,0 +1,12 @@
+/*
+  Cross-Origin-Opener-Policy: same-origin
+  Cross-Origin-Embedder-Policy: require-corp
+
+# Optional: tighten or relax as needed depending on any 3rd-party assets
+#  Cross-Origin-Resource-Policy: cross-origin
+#  Permissions-Policy: camera=(self), microphone=(self), fullscreen=(self)
+
+# Optional: ensure WASM served with correct content type (Netlify usually does this)
+# /*.wasm
+#   Content-Type: application/wasm
+

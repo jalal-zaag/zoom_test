@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="CopilotDiffPersistence">
+    <option name="pendingDiffs">
+      <map>
+        <entry key="$PROJECT_DIR$/public/_headers">
+          <value>
+            <PendingDiffInfo>
+              <option name="filePath" value="$PROJECT_DIR$/public/_headers" />
+              <option name="updatedContent" value="/*&#10;  Cross-Origin-Opener-Policy: same-origin&#10;  Cross-Origin-Embedder-Policy: require-corp&#10;&#10;# Optional: tighten or relax as needed depending on any 3rd-party assets&#10;#  Cross-Origin-Resource-Policy: cross-origin&#10;#  Permissions-Policy: camera=(self), microphone=(self), fullscreen=(self)&#10;&#10;# Optional: ensure WASM served with correct content type (Netlify usually does this)&#10;# /*.wasm&#10;#   Content-Type: application/wasm&#10;" />
+            </PendingDiffInfo>
+          </value>
+        </entry>
+      </map>
+    </option>
+  </component>
+</project>

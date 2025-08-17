@@ -293,6 +293,8 @@ const ZoomTest = () => {
                                     onClick={() => {
                                         // Try to fullscreen any visible <video> on the page
                                         const videos = Array.from(document.querySelectorAll("video"));
+
+                                        console.log("video ", videos)
                                         const candidate =
                                             videos.find(v => typeof v.webkitEnterFullscreen === "function" && v.offsetWidth > 0 && v.offsetHeight > 0) ||
                                             videos.find(v => typeof v.webkitEnterFullscreen === "function");
