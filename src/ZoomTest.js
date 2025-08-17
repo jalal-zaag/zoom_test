@@ -285,7 +285,9 @@ const ZoomTest = () => {
                                 {isFullscreenNow ? "Exit Fullscreen" : "Fullscreen"}
                             </Button>
                             {/* iOS Fullscreen Button */}
-                            {isIOS() && (
+                            {
+                                // isIOS() &&
+                                (
                                 <Button
                                     icon={<FullscreenOutlined/>}
                                     onClick={() => {
